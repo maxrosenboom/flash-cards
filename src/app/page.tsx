@@ -236,7 +236,7 @@ export default function Home() {
       }
 
       // Upload file to Supabase Storage
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('spanish-flashcards')
         .upload(`csv-files/${file.name}`, file, {
           cacheControl: '3600',

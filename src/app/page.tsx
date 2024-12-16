@@ -61,21 +61,21 @@ export default function Home() {
   // Updated loadCSV function
   const loadCSV = async (file: string) => {
     try {
-      let data;
+      let text;
       if (file.startsWith('EN-ES_')) {
         // Load default files from public directory
         const response = await fetch(`/data/${file}`);
-        data = await response.text();
+        text = await response.text();
       } else {
         // Load custom files from Supabase
         const level = levels.find(l => l.filename === file);
         if (!level?.url) throw new Error('File URL not found');
         
         const response = await fetch(level.url);
-        data = await response.text();
+        text = await response.text();
       }
 
-      const parsedData = parseCSV(data);
+      const parsedData = parseCSV(text);
       if (parsedData.length === 0) {
         throw new Error('No valid data found in CSV');
       }
@@ -395,7 +395,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="text-center w-full">
-            <p className="text-xl">Deck completed! Click 'Reset Deck' to try again.</p>
+            <p className="text-xl">Deck completed! Click &apos;Reset Deck&apos; to try again.</p>
           </div>
         )}
       </div>

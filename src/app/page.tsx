@@ -60,14 +60,13 @@ export default function Home() {
 
   // Updated loadCSV function
   const loadCSV = async (file: string) => {
+    setIsLoading(true); // Set loading state when starting to load
     try {
       let text;
       if (file.startsWith('EN-ES_')) {
-        // Load default files from public directory
         const response = await fetch(`/data/${file}`);
         text = await response.text();
       } else {
-        // Load custom files from Supabase
         const level = levels.find(l => l.filename === file);
         if (!level?.url) throw new Error('File URL not found');
         
@@ -90,10 +89,13 @@ export default function Home() {
       console.error("Error loading CSV:", error);
       alert("Error loading level. Switching to Level 1.");
       setSelectedFile("EN-ES_level1.csv");
+    } finally {
+      setIsLoading(false); // Always turn off loading state
     }
   };
 
   const modalRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -222,21 +224,23 @@ export default function Home() {
 
   // Add state for editing name
   const [editingLevelId, setEditingLevelId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [deletingLevel, setDeletingLevel] = useState<string | null>(null);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setIsUploading(true);
     try {
-      // First validate the CSV format
+      // Rest of your upload logic...
       const text = await file.text();
       const parsedData = parseCSV(text);
       if (parsedData.length === 0) {
         throw new Error('Invalid CSV format or empty file');
       }
 
-      // Upload file to Supabase Storage
-      const { error } = await supabase.storage
+      const { data, error } = await supabase.storage
         .from('spanish-flashcards')
         .upload(`csv-files/${file.name}`, file, {
           cacheControl: '3600',
@@ -245,12 +249,11 @@ export default function Home() {
 
       if (error) throw error;
 
-      // Get the public URL
       const { data: { publicUrl } } = supabase.storage
         .from('spanish-flashcards')
         .getPublicUrl(`csv-files/${file.name}`);
 
-      // Add new level
+      // Add new level logic...
       const newLevel: Level = {
         name: file.name.replace('.csv', ''),
         filename: file.name,
@@ -275,9 +278,10 @@ export default function Home() {
     } catch (error) {
       console.error('Error uploading file:', error);
       alert('Error uploading file. Please try again.');
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
     }
-    
-    e.target.value = '';
   };
 
   const updateLevelName = (filename: string, newName: string) => {
@@ -295,8 +299,9 @@ export default function Home() {
   };
 
   const removeLevel = async (filename: string) => {
+    setDeletingLevel(filename);
     try {
-      // Remove from Supabase storage
+      // Rest of your delete logic...
       const { error } = await supabase.storage
         .from('spanish-flashcards')
         .remove([`csv-files/${filename}`]);
@@ -313,7 +318,6 @@ export default function Home() {
         const customLevels = updated.filter(l => !l.isDefault);
         localStorage.setItem('customLevels', JSON.stringify(customLevels));
 
-        // If the removed level was selected, switch to the first available level
         if (selectedFile === filename) {
           const firstAvailableLevel = updated[0].filename;
           setSelectedFile(firstAvailableLevel);
@@ -324,6 +328,8 @@ export default function Home() {
     } catch (error) {
       console.error('Error removing file:', error);
       alert('Error removing file. Please try again.');
+    } finally {
+      setDeletingLevel(null);
     }
   };
 
@@ -357,7 +363,12 @@ export default function Home() {
       </div>
 
       <div className="flashcard-container">
-        {flashcards.length > 0 && currentCardIndex < flashcards.length ? (
+        {isLoading ? (
+          <div className="text-center w-full p-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent mb-4"></div>
+            <p className="text-xl text-gray-600">Loading cards...</p>
+          </div>
+        ) : flashcards.length > 0 && currentCardIndex < flashcards.length ? (
           <div 
             className={`flashcard ${isFlipped ? 'is-flipped' : ''}`}
             onClick={flipCard}
@@ -434,7 +445,7 @@ export default function Home() {
           <div className="space-y-2 mb-4">
             {levels.map(level => (
               <div key={level.filename} 
-                className="flex items-center justify-between p-2 hover:bg-gray-50 rounded transition-colors duration-200"
+                className="flex items-center justify-between py-1 px-2 hover:bg-gray-50 rounded transition-colors duration-200"
               >
                 {editingLevelId === level.filename ? (
                   <input
@@ -469,6 +480,10 @@ export default function Home() {
                       )}
                       {level.isDefault ? (
                         <span className="text-xs text-gray-400 px-2 py-1">Default</span>
+                      ) : deletingLevel === level.filename ? (
+                        <div className="p-1.5">
+                          <i className="fa-solid fa-spinner fa-spin text-xs text-gray-400"></i>
+                        </div>
                       ) : (
                         <button
                           onClick={() => removeLevel(level.filename)}
@@ -487,11 +502,12 @@ export default function Home() {
           <div className="border-t pt-4">
             <label className="block text-sm font-medium text-gray-700">
               Add New Level
-              <div className="mt-2">
+              <div className="mt-2 relative">
                 <input
                   type="file"
                   accept=".csv"
                   onChange={handleFileUpload}
+                  disabled={isUploading}
                   className="block w-full text-sm text-gray-500
                   file:mr-4 file:py-2 file:px-4
                   file:rounded-md file:border-0
@@ -500,8 +516,14 @@ export default function Home() {
                   hover:file:bg-blue-100
                   cursor-pointer
                   border rounded-md
-                  focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  focus:outline-none focus:ring-2 focus:ring-blue-200
+                  disabled:opacity-50 disabled:cursor-not-allowed"
                 />
+                {isUploading && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <i className="fa-solid fa-spinner fa-spin text-gray-400"></i>
+                  </div>
+                )}
               </div>
             </label>
           </div>

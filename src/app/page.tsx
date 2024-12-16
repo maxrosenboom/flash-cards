@@ -240,7 +240,7 @@ export default function Home() {
         throw new Error('Invalid CSV format or empty file');
       }
 
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('spanish-flashcards')
         .upload(`csv-files/${file.name}`, file, {
           cacheControl: '3600',

@@ -1,6 +1,7 @@
 // app/page.tsx
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { supabase } from '../../lib/supabaseClient';
 
 interface Flashcard {
   id: number;
@@ -46,6 +47,7 @@ export default function Home() {
 
   useEffect(() => {
     loadCSV(selectedFile);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedFile]);
 
   const getRandomIndex = (length: number): number => {
@@ -119,7 +121,7 @@ export default function Home() {
       let current = '';
       let inQuotes = false;
 
-      for (let char of row) {
+      for (const char of row) {
         if (char === '"' && inQuotes) {
           inQuotes = false;
         } else if (char === '"' && !inQuotes) {
@@ -385,7 +387,7 @@ export default function Home() {
                     className="block w-full p-2 bg-red-500 text-white rounded hover:bg-red-600"
                     onClick={(e) => markCard('unknown', e)}
                   >
-                    ❌ I don't know this word
+                    ❌ I don&apos;t know this word
                   </button>
                 </div>
               </div>

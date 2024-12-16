@@ -2,20 +2,67 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+.flashcard {
+  perspective: 1000px;
+  cursor: pointer;
+  height: 200px;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  position: relative;
+  transform-style: preserve-3d;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.card-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transition: transform 0.3s ease;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+.card-back {
+  transform: rotateY(180deg);
+}
+
+.flashcard.is-flipped .card-front {
+  transform: rotateY(180deg);
+}
+
+.flashcard.is-flipped .card-back {
+  transform: rotateY(360deg);
+}
+
+.card-content {
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+
+.card-content.hidden {
+  opacity: 0;
+}
+
+.flashcard-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.button-container {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
 }
